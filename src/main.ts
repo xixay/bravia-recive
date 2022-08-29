@@ -10,7 +10,7 @@ async function bootstrap() {
     credentials: true,
   });
   connect();
-  await app.listen(3001);
+  // await app.listen(3001);
 }
 bootstrap();
 async function connect() {
