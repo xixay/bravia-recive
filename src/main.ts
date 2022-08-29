@@ -62,7 +62,7 @@ async function connect() {
       },
       {
         // modo de reconocimiento automático,
-        noAck: envio_openvox,
+        noAck: envio_openvox,// si el acuse es true, se envio al openvox
       },
     );
     console.log(
