@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 //En receive.js , primero debemos solicitar la biblioteca:
 import * as amqp from 'amqplib';
 // variable de envio openvox
-const envio_openvox = false;
+const envio_openvox = true;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
@@ -23,10 +23,23 @@ async function connect() {
     const coneccion = await amqp.connect('amqp://guest:guest@localhost:5672');
     //A continuación, creamos un canal
     const canal = await coneccion.createChannel();
-    const cola = 'test_queue';
+    // exchange
+    const ex = 'direct_logs';
+    // const cola = process.env.AMQP_QUEUE_SMS;
+    // cola test
+    // const cola = 'test_queue';
+    const cola = 'cola_AGETIC';
+    // router key
+    // const rkey = 'test_route';
+    const rkey = 'ruta_AGETIC';
+    // agregando el exchange de tipo direct
+    await canal.assertExchange(ex, 'direct', { durable: true });
+    // agregando la cola
     await canal.assertQueue(cola, {
       durable: true,
+      maxPriority: 10,
     });
+    await canal.bindQueue(cola, ex, rkey);
     canal.consume(
       cola,
       (mensaje) => {
