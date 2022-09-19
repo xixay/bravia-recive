@@ -2,8 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 //En receive.js , primero debemos solicitar la biblioteca:
 import * as amqp from 'amqplib';
+import axios from 'axios';
 // variable de envio openvox
-const envio_openvox = true;
+const envio_openvox = false;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
@@ -11,12 +12,18 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
-  connect();
+  const queues = await obtenerColas(true);
+  const routerskeys = await obtenerColas(false);
+  for (let i = 0; i < queues.length; i++) {
+    const queue = queues[i];
+    const routerkey = routerskeys[i];
+    connect(queue, routerkey);
+  }
   // recive_cola_tareas();
   // await app.listen(3001);
 }
 bootstrap();
-async function connect() {
+async function connect(queue: string, routerkey) {
   try {
     //luego conéctese al servidor RabbitMQ
     // const connection = await amqp.connect("amqp://localhost:5672");
@@ -28,10 +35,10 @@ async function connect() {
     // const cola = process.env.AMQP_QUEUE_SMS;
     // cola test
     // const cola = 'test_queue';
-    const cola = 'cola_AGETIC';
+    const cola = queue;
     // router key
     // const rkey = 'test_route';
-    const rkey = 'ruta_AGETIC';
+    const rkey = routerkey;
     // agregando el exchange de tipo direct
     await canal.assertExchange(ex, 'direct', { durable: true });
     // agregando la cola
@@ -62,4 +69,27 @@ async function connect() {
   } catch (ex) {
     console.error(ex);
   }
+}
+async function obtenerColas(sw: boolean) {
+  const array1 = [];
+  let aux = null;
+  if (sw) {
+    aux = 'cola_';
+  } else {
+    aux = 'ruta_';
+  }
+
+  await axios
+    .get('http://localhost:3000/api/entidades/nombres')
+    .then((response) => {
+      response.data.forEach((element) => {
+        array1.push(aux + element.nombreEntidad);
+      });
+    })
+    .catch((e) => {
+      console.log(e);
+    });
+  console.log(array1);
+
+  return array1;
 }
